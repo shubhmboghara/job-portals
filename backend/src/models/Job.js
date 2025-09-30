@@ -2,20 +2,11 @@ import mongoose from 'mongoose';
 
 const jobSchema = mongoose.Schema(
   {
-    company_id: {
+    company: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: 'Company',
     },
-
-    company_name: {
-      type: String,
-    },
-    
-    company_logo: {
-      type: String,
-    },
-
     title: {
       type: String,
       required: [true, 'Please provide a job title.'],
@@ -65,6 +56,13 @@ const jobSchema = mongoose.Schema(
     required_skills: {
       type: [String],
       required: true,
+    },
+
+    company_name: {
+      type: String,
+    },
+    company_logo_url: {
+      type: String,
     },
   },
   {
