@@ -32,14 +32,39 @@ const applicantSchema = mongoose.Schema(
     experience: {
       type: Number,
     },
+
     education: [
       {
-        degree: String,
-        institution: String,
-        year: Number,
+        level: {
+          type: String,
+          required: true,
+          enum: [
+           
+            'Primary Education',
+            'High School Diploma / Secondary Education',
+            'Vocational Training / Diploma',
+            'Associate Degree',
+            "Bachelor's Degree",
+            "Master's Degree",
+            'Doctorate (PhD)',
+            'Post-Doctorate',
+          ],
+        },
+        specialization: {
+          type: String,
+          required: true,
+        },
+        institution: {
+          type: String,
+          required: true,
+        },
+        year_of_completion: {
+          type: Number,
+          required: true,
+        },
       },
     ],
-    
+
     refreshToken: {
       type: String,
     },

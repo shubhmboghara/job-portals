@@ -1,3 +1,10 @@
+// we use this thing for   job     const jobs = await Job.find({})
+// ...and populate the 'company' field with these specific details.
+// .populate({
+//   path: 'company',
+//   select: 'company_name company_logo'
+// });
+
 import mongoose from 'mongoose';
 
 const jobSchema = mongoose.Schema(
@@ -58,10 +65,28 @@ const jobSchema = mongoose.Schema(
       required: true,
     },
 
-    company_name: {
-      type: String,
-    },
-    company_logo_url: {
+    education: [
+      {
+        level: {
+          type: String,
+          required: true,
+          enum: [
+            'Not Required',
+            'Some High School',
+            'High School Diploma or Equivalent',
+            'Vocational or Technical Training',
+            'Associate Degree',
+            "Bachelor's Degree",
+            "Master's Degree",
+            'Professional Degree',
+            'Doctorate',
+          ],
+        },
+        specialization: { type: String },
+      },
+    ],
+
+    cover_letter_text: {
       type: String,
     },
   },

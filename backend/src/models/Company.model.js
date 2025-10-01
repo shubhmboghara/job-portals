@@ -1,13 +1,20 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const userSchema = mongoose.Schema(
+const companySchema = new mongoose.Schema(
   {
-    fullName: {
+    company_name: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
+    company_logo: {
       type: String,
       required: true,
     },
+
     email: {
       type: String,
       required: true,
@@ -17,42 +24,29 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    role: {
+
+    website: {
       type: String,
-      enum: ['applicant', 'admin'],
-      required: true,
+    },
+    description: {
+      type: String,
+    },
+    industry: {
+      type: String,
+    },
+    headquarters: {
+      type: String,
     },
 
-    resume: {
+    refreshToken: {
       type: String,
     },
-    skills: {
-      type: [String],
-    },
-    portfolio: {
-      type: String,
-    },
-    location: {
-      type: String,
-    },
-    experience: {
-      type: Number,
-    },
-    education: [
-      {
-        degree: String,
-        institution: String,
-        year: Number,
-      },
-    ],
-
   },
-  {
-    timestamps: true,
-  }
-);
+  { timestamps: true }
+);  
 
-userSchema.pre('save', async function (next) {
+
+companySchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();
   }
@@ -60,16 +54,16 @@ userSchema.pre('save', async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-userSchema.methods.isPasswordCorrect = async function (enteredPassword) {
+companySchema.methods.isPasswordCorrect = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-userSchema.methods.generateAccessToken = function () {
+companySchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
-      role: this.role,
+      role: 'company',
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
@@ -78,6 +72,6 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-const User = mongoose.model('User', userSchema);
+const Company = mongoose.model('Company', companySchema);
 
-export default User;
+export default Company;
