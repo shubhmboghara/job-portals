@@ -39,29 +39,32 @@ const applicantSchema = mongoose.Schema(
           type: String,
           required: true,
           enum: [
-           
-            'Primary Education',
-            'High School Diploma / Secondary Education',
-            'Vocational Training / Diploma',
+            'Some High School',
+            'High School Diploma or Equivalent',
+            'Vocational or Technical Training',
             'Associate Degree',
             "Bachelor's Degree",
             "Master's Degree",
-            'Doctorate (PhD)',
-            'Post-Doctorate',
+            'Professional Degree',
+            'Doctorate',
           ],
         },
         specialization: {
           type: String,
-          required: true,
+          required: function () {
+            const levelsRequiringSpecialization = [
+              'Vocational or Technical Training',
+              'Associate Degree',
+              "Bachelor's Degree",
+              "Master's Degree",
+              'Professional Degree',
+              'Doctorate',
+            ];
+            return levelsRequiringSpecialization.includes(this.level);
+          },
         },
-        institution: {
-          type: String,
-          required: true,
-        },
-        year_of_completion: {
-          type: Number,
-          required: true,
-        },
+        institution: { type: String, required: true },
+        year_of_completion: { type: Number, required: true },
       },
     ],
 
