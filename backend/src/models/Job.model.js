@@ -60,7 +60,7 @@ const jobSchema = mongoose.Schema(
       enum: ['open', 'closed'],
       default: 'open',
     },
-    required_skills: {
+    skills: {
       type: [String],
       required: true,
     },
