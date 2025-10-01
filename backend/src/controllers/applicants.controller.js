@@ -1,4 +1,4 @@
-import { Applicant } from '../models/user.model.js';
+import Applicant from '../models/applicant.model.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
@@ -12,216 +12,131 @@ const cookieOptions = {
   sameSite: isProd ? 'None' : 'Lax',
 };
 
-const generateAccessAndRefreshTokens = async (userId) => {
+const generateTokensForApplicant = async (applicantId) => {
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new ApiError(404, 'User not found');
+    const applicant = await Applicant.findById(applicantId);
+    if (!applicant) {
+      throw new ApiError(404, 'Applicant not found');
     }
 
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+    const accessToken = applicant.generateAccessToken();
+    const refreshToken = applicant.generateRefreshToken(); // IMPORTANT: You need to create this method
 
-    user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false });
+    applicant.refreshToken = refreshToken;
+    await applicant.save({ validateBeforeSave: false });
 
     return { accessToken, refreshToken };
   } catch (error) {
-    throw new ApiError(500, 'Something went wrong while generating tokens');
+    throw new ApiError(500, 'Something went wrong while generating tokens for applicant');
   }
 };
 
-const registerUser = asyncHandler(async (req, res) => {
-  const { fullname, email, username, password } = req.body;
+const registerApplicant = asyncHandler(async (req, res) => {
+  const { fullName, email, password } = req.body;
 
-  if (!fullname || !email || !username || !password) {
-    throw new ApiError(400, 'All fields are required');
+  if (!fullName || !email || !password) {
+    throw new ApiError(400, 'Full name, email, and password are required');
   }
 
-  const existingUser = await User.findOne({
-    $or: [{ email }, { username: username.toLowerCase() }],
-  });
-
-  if (existingUser) {
-    if (existingUser.email === email) {
-      throw new ApiError(400, 'User already exist with this Email id');
-    }
-
-    if (existingUser.username === username.toLowerCase()) {
-      throw new ApiError(400, 'User already exist with this Username');
-    }
+  const existingApplicant = await Applicant.findOne({ email });
+  if (existingApplicant) {
+    throw new ApiError(400, 'Applicant with this email already exists');
   }
 
-  const user = await User.create({
-    fullname,
-    username: username.toLowerCase(),
+  const applicant = await Applicant.create({
+    fullName,
     email,
     password,
   });
 
-  if (!user) {
-    throw new ApiError(500, 'Something went wrong while registering the user');
+  if (!applicant) {
+    throw new ApiError(500, 'Something went wrong while registering the applicant');
   }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+  const { accessToken, refreshToken } = await generateTokensForApplicant(applicant._id);
 
-  const createdUser = user.toObject();
-  delete createdUser.password;
-  delete createdUser.refreshToken;
+  const createdApplicant = applicant.toObject();
+  delete createdApplicant.password;
+  delete createdApplicant.refreshToken;
 
   return res
     .status(201)
     .cookie('accessToken', accessToken, cookieOptions)
     .cookie('refreshToken', refreshToken, cookieOptions)
-    .json(new ApiResponse(201, createdUser, 'User registered successfully'));
+    .json(new ApiResponse(201, createdApplicant, 'Applicant registered successfully'));
 });
 
-const loggedInUser = asyncHandler(async (req, res) => {
-  const { emailorusername, password } = req.body;
+const loginApplicant = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-  if (!emailorusername || !password) {
-    throw new ApiError(400, 'Username/email and password are required ');
+  if (!email || !password) {
+    throw new ApiError(400, 'Email and password are required');
   }
 
-  const user = await User.findOne({
-    $or: [{ email: emailorusername }, { username: emailorusername.toLowerCase() }],
-  });
-
-  if (!user) {
-    throw new ApiError(401, 'Invalid Username and Email ');
+  const applicant = await Applicant.findOne({ email });
+  if (!applicant) {
+    throw new ApiError(401, 'Invalid email or password');
   }
 
-  const isPasswordValid = await user.isPasswordCorrect(password);
-
+  const isPasswordValid = await applicant.isPasswordCorrect(password);
   if (!isPasswordValid) {
-    throw new ApiError(401, 'Invalid  Password');
+    throw new ApiError(401, 'Invalid email or password');
   }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+  const { accessToken, refreshToken } = await generateTokensForApplicant(applicant._id);
 
-  const loggedInUser = user.toObject();
-  delete loggedInUser.password;
-  delete loggedInUser.refreshToken;
+  const loggedInApplicant = applicant.toObject();
+  delete loggedInApplicant.password;
+  delete loggedInApplicant.refreshToken;
 
   return res
     .status(200)
     .cookie('accessToken', accessToken, cookieOptions)
     .cookie('refreshToken', refreshToken, cookieOptions)
-    .json(new ApiResponse(200, loggedInUser, 'User logged in successfully'));
+    .json(new ApiResponse(200, loggedInApplicant, 'Applicant logged in successfully'));
 });
 
-const logoutUser = asyncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } }, { new: true });
+const logoutApplicant = asyncHandler(async (req, res) => {
+  await Applicant.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } });
 
   return res
     .clearCookie('accessToken', cookieOptions)
     .clearCookie('refreshToken', cookieOptions)
-    .json(new ApiResponse(200, {}, 'User logged out'));
+    .json(new ApiResponse(200, {}, 'Applicant logged out'));
 });
 
-const refreshAccesToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
-
-  try {
-    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-    const user = await User.findById(decodedToken?._id);
-
-    if (!user) {
-      throw new ApiError(401, 'Invalid refresh token');
-    }
-
-    if (incomingRefreshToken != user.refreshToken) {
-      throw new ApiError(401, 'Refresh token expired or used');
-    }
-
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-    return res
-      .status(200)
-      .cookie('accessToken', accessToken, cookieOptions)
-      .cookie('refreshToken', refreshToken, cookieOptions)
-      .json(new ApiResponse(200, {}, 'Access token refreshed'));
-  } catch (error) {
-    throw new ApiError(401, error?.message || 'Invalid refresh token');
-  }
+const getcurrentApplicant = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, 'Applicant profile fetched successfully'));
 });
 
-const getCurrentUser = asyncHandler(async (req, res) => {
-  return res.status(200).json(new ApiResponse(200, req.user, 'Current user fetched successfully'));
-});
+const updateApplicantProfile = asyncHandler(async (req, res) => {
+  const { fullName, resume, skills, portfolio, location, experience, education } = req.body;
 
-const changePassword = asyncHandler(async (req, res) => {
-  const { oldPassword, newPassword } = req.body;
-
-  if (!oldPassword || !newPassword) {
-    throw new ApiError(400, 'Both old and new passwords are required');
-  }
-
-  const user = await User.findById(req.user._id);
-
-  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
-
-  if (!isPasswordCorrect) {
-    throw new ApiError(400, 'Invalid old password');
-  }
-
-  user.password = newPassword;
-
-  await user.save();
-
-  return res.status(200).json(new ApiResponse(200, {}, 'Password changed successfully'));
-});
-
-const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullname, email, username } = req.body;
-
-  if (!fullname && !email && !username) {
-    throw new ApiError(400, 'At least one field is required');
-  }
-
-  if (email || username) {
-    const or = [];
-    if (email) or.push({ email });
-    if (username) or.push({ username: username.toLowerCase() });
-
-    const existingUser = await User.findOne({
-      $or: or,
-      _id: { $ne: req.user._id },
-    });
-
-    if (existingUser) {
-      if (email && existingUser.email === email) {
-        throw new ApiError(400, 'User already exist with this Email id');
-      }
-
-      if (username && existingUser.username === username.toLowerCase()) {
-        throw new ApiError(400, 'User already exist with this Username');
-      }
-    }
-  }
-
-  const updateData = {};
-
-  if (fullname) updateData.fullname = fullname;
-  if (email) updateData.email = email;
-  if (username) updateData.username = username.toLowerCase();
-
-  const user = await User.findByIdAndUpdate(
+  const applicant = await Applicant.findByIdAndUpdate(
     req.user._id,
-    { $set: updateData },
+    {
+      $set: {
+        fullName,
+        resume,
+        skills,
+        portfolio,
+        location,
+        experience,
+        education,
+      },
+    },
     { new: true }
   ).select('-password -refreshToken');
 
-  return res.status(200).json(new ApiResponse(200, user, 'Account details updated'));
+  return res.status(200).json(new ApiResponse(200, applicant, 'Profile updated successfully'));
 });
 
 export {
-  registerUser,
-  loggedInUser,
-  logoutUser,
-  refreshAccesToken,
-  getCurrentUser,
-  changePassword,
-  updateAccountDetails,
+  registerApplicant,
+  loginApplicant,
+  logoutApplicant,
+  getcurrentApplicant,
+  updateApplicantProfile,
 };
