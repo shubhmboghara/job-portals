@@ -1,13 +1,12 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { type } from 'os';
 
 const applicantSchema = mongoose.Schema(
   {
-    avatar :{
-      type:String,
-      required:true,
+    avatar: {
+      type: String,
+      required: true,
     },
     fullName: {
       type: String,
@@ -104,6 +103,18 @@ applicantSchema.methods.generateAccessToken = function () {
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+    }
+  );
+};
+
+applicantSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     }
   );
 };

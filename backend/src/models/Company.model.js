@@ -43,8 +43,7 @@ const companySchema = new mongoose.Schema(
     },
   },
   { timestamps: true }
-);  
-
+);
 
 companySchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
@@ -68,6 +67,18 @@ companySchema.methods.generateAccessToken = function () {
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+    }
+  );
+};
+
+companySchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     }
   );
 };

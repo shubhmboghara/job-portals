@@ -20,7 +20,7 @@ const generateTokensForCompany = async (companyId) => {
     if (!company) throw new ApiError(404, 'Company not found');
 
     const accessToken = company.generateAccessToken();
-    const refreshToken = company.generateRefreshToken(); // This method must exist on your model
+    const refreshToken = company.generateRefreshToken(); 
 
     company.refreshToken = refreshToken;
     await company.save({ validateBeforeSave: false });
@@ -44,24 +44,24 @@ const registerCompany = asyncHandler(async (req, res) => {
 
   const logoLocalPath = req.file?.path;
   if (!logoLocalPath) {
-      throw new ApiError(400, "Company logo file is required");
+    throw new ApiError(400, 'Company logo file is required');
   }
 
   const logo = await uploadOnCloudinary(logoLocalPath);
-  if(!logo) {
-      throw new ApiError(500, "Company logo upload failed");
+  if (!logo) {
+    throw new ApiError(500, 'Company logo upload failed');
   }
 
-  const company = await Company.create({ 
-      company_name, 
-      email, 
-      password,
-      company_logo: logo.url,
-      website,
-      description,
-      industry,
-      headquarters
-    });
+  const company = await Company.create({
+    company_name,
+    email,
+    password,
+    company_logo: logo.url,
+    website,
+    description,
+    industry,
+    headquarters,
+  });
 
   if (!company) {
     throw new ApiError(500, 'Something went wrong while registering the company');
@@ -111,31 +111,35 @@ const logoutCompany = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
-    if (!incomingRefreshToken) throw new ApiError(401, 'Unauthorized request');
-  
-    try {
-      const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
-      const company = await Company.findById(decodedToken?._id);
-  
-      if (!company || incomingRefreshToken !== company.refreshToken) {
-        throw new ApiError(401, 'Refresh token is expired or used');
-      }
-  
-      const { accessToken, refreshToken: newRefreshToken } = await generateTokensForCompany(company._id);
-  
-      return res
-        .status(200)
-        .cookie('accessToken', accessToken, cookieOptions)
-        .cookie('refreshToken', newRefreshToken, cookieOptions)
-        .json(new ApiResponse(200, {}, 'Access token refreshed'));
-    } catch (error) {
-      throw new ApiError(401, error?.message || 'Invalid refresh token');
+  const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+  if (!incomingRefreshToken) throw new ApiError(401, 'Unauthorized request');
+
+  try {
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const company = await Company.findById(decodedToken?._id);
+
+    if (!company || incomingRefreshToken !== company.refreshToken) {
+      throw new ApiError(401, 'Refresh token is expired or used');
     }
+
+    const { accessToken, refreshToken: newRefreshToken } = await generateTokensForCompany(
+      company._id
+    );
+
+    return res
+      .status(200)
+      .cookie('accessToken', accessToken, cookieOptions)
+      .cookie('refreshToken', newRefreshToken, cookieOptions)
+      .json(new ApiResponse(200, {}, 'Access token refreshed'));
+  } catch (error) {
+    throw new ApiError(401, error?.message || 'Invalid refresh token');
+  }
 });
 
 const getCompanyProfile = asyncHandler(async (req, res) => {
-  return res.status(200).json(new ApiResponse(200, req.user, 'Company profile fetched successfully'));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, 'Company profile fetched successfully'));
 });
 
 const updateCompanyProfile = asyncHandler(async (req, res) => {
@@ -149,57 +153,59 @@ const updateCompanyProfile = asyncHandler(async (req, res) => {
 });
 
 const changePassword = asyncHandler(async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
-    if (!oldPassword || !newPassword) throw new ApiError(400, 'Old and new passwords are required');
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) throw new ApiError(400, 'Old and new passwords are required');
 
-    const company = await Company.findById(req.user._id);
-    const isPasswordCorrect = await company.isPasswordCorrect(oldPassword);
-    if (!isPasswordCorrect) throw new ApiError(400, 'Invalid old password');
-    
-    company.password = newPassword;
-    await company.save();
+  const company = await Company.findById(req.user._id);
+  const isPasswordCorrect = await company.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) throw new ApiError(400, 'Invalid old password');
 
-    return res.status(200).json(new ApiResponse(200, {}, 'Password changed successfully'));
+  company.password = newPassword;
+  await company.save();
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Password changed successfully'));
 });
 
 const updateCompanyLogo = asyncHandler(async (req, res) => {
-    const logoLocalPath = req.file?.path;
-    if (!logoLocalPath) throw new ApiError(400, "Company logo file is missing");
+  const logoLocalPath = req.file?.path;
+  if (!logoLocalPath) throw new ApiError(400, 'Company logo file is missing');
 
-    const company = await Company.findById(req.user._id);
-    const oldLogoUrl = company.company_logo;
+  const company = await Company.findById(req.user._id);
+  const oldLogoUrl = company.company_logo;
 
-    const logo = await uploadOnCloudinary(logoLocalPath);
-    if (!logo || !logo.url) throw new ApiError(500, "Error while uploading company logo");
+  const logo = await uploadOnCloudinary(logoLocalPath);
+  if (!logo || !logo.url) throw new ApiError(500, 'Error while uploading company logo');
 
-    company.company_logo = logo.url;
-    await company.save({ validateBeforeSave: false });
+  company.company_logo = logo.url;
+  await company.save({ validateBeforeSave: false });
 
-    if (oldLogoUrl) {
-        const publicIdValue = publicId(oldLogoUrl);
-        if (publicIdValue) await deleteFromCloudinary(publicIdValue);
-    }
+  if (oldLogoUrl) {
+    const publicIdValue = publicId(oldLogoUrl);
+    if (publicIdValue) await deleteFromCloudinary(publicIdValue);
+  }
 
-    return res.status(200).json(new ApiResponse(200, { company_logo: logo.url }, "Company logo updated successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { company_logo: logo.url }, 'Company logo updated successfully'));
 });
 
 const deleteCompanyAccount = asyncHandler(async (req, res) => {
-    const company = await Company.findById(req.user._id);
+  const company = await Company.findById(req.user._id);
 
-    if (company.company_logo) {
-        const publicIdValue = publicId(company.company_logo);
-        if(publicIdValue) await deleteFromCloudinary(publicIdValue);
-    }
+  if (company.company_logo) {
+    const publicIdValue = publicId(company.company_logo);
+    if (publicIdValue) await deleteFromCloudinary(publicIdValue);
+  }
 
-    await Job.deleteMany({ company: req.user._id });
+  await Job.deleteMany({ company: req.user._id });
 
-    await Company.findByIdAndDelete(req.user._id);
+  await Company.findByIdAndDelete(req.user._id);
 
-    return res
-        .status(200)
-        .clearCookie('accessToken', cookieOptions)
-        .clearCookie('refreshToken', cookieOptions)
-        .json(new ApiResponse(200, {}, "Company account and all associated jobs have been deleted."));
+  return res
+    .status(200)
+    .clearCookie('accessToken', cookieOptions)
+    .clearCookie('refreshToken', cookieOptions)
+    .json(new ApiResponse(200, {}, 'Company account and all associated jobs have been deleted.'));
 });
 
 export {
@@ -213,4 +219,3 @@ export {
   updateCompanyLogo,
   deleteCompanyAccount,
 };
-

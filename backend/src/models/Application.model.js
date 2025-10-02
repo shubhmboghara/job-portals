@@ -19,15 +19,14 @@ const applicationSchema = new mongoose.Schema(
       required: true,
       default: Date.now,
     },
-     cover_letter_text: { 
-      type: String 
+    cover_letter_text: {
+      type: String,
     },
     status: {
       type: String,
       enum: ['Applied', 'Under Review', 'Shortlisted', 'Interviewing', 'Rejected', 'Hired'],
       default: 'Applied',
     },
-    
   },
   { timestamps: true }
 );

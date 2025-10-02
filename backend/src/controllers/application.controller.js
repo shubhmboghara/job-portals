@@ -31,7 +31,8 @@ const generateTokensForApplicant = async (applicantId) => {
 };
 
 const registerApplicant = asyncHandler(async (req, res) => {
-  const { fullName, email, password, skills, portfolio, location, experience, education } = req.body;
+  const { fullName, email, password, skills, portfolio, location, experience, education } =
+    req.body;
   if (!fullName || !email || !password) {
     throw new ApiError(400, 'Full name, email, and password are required');
   }
@@ -40,24 +41,24 @@ const registerApplicant = asyncHandler(async (req, res) => {
   if (existingApplicant) {
     throw new ApiError(409, 'Applicant with this email already exists');
   }
-  
+
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is required");
+    throw new ApiError(400, 'Avatar file is required');
   }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   if (!avatar) {
-      throw new ApiError(500, "Avatar upload failed");
+    throw new ApiError(500, 'Avatar upload failed');
   }
 
-  let resumeUrl = "";
+  let resumeUrl = '';
   const resumeLocalPath = req.files?.resume?.[0]?.path;
   if (resumeLocalPath) {
-      const resume = await uploadOnCloudinary(resumeLocalPath);
-      if (resume) {
-          resumeUrl = resume.url;
-      }
+    const resume = await uploadOnCloudinary(resumeLocalPath);
+    if (resume) {
+      resumeUrl = resume.url;
+    }
   }
 
   const applicant = await Applicant.create({
@@ -70,7 +71,7 @@ const registerApplicant = asyncHandler(async (req, res) => {
     portfolio,
     location,
     experience,
-    education
+    education,
   });
   if (!applicant) {
     throw new ApiError(500, 'Something went wrong while registering the applicant');
@@ -131,7 +132,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, 'Refresh token is expired or used');
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = await generateTokensForApplicant(applicant._id);
+    const { accessToken, refreshToken: newRefreshToken } = await generateTokensForApplicant(
+      applicant._id
+    );
 
     return res
       .status(200)
@@ -144,7 +147,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const getApplicantProfile = asyncHandler(async (req, res) => {
-  return res.status(200).json(new ApiResponse(200, req.user, 'Applicant profile fetched successfully'));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, 'Applicant profile fetched successfully'));
 });
 
 const updateApplicantProfile = asyncHandler(async (req, res) => {
@@ -158,28 +163,28 @@ const updateApplicantProfile = asyncHandler(async (req, res) => {
 });
 
 const changePassword = asyncHandler(async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
-    if (!oldPassword || !newPassword) throw new ApiError(400, 'Old and new passwords are required');
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) throw new ApiError(400, 'Old and new passwords are required');
 
-    const applicant = await Applicant.findById(req.user._id);
-    const isPasswordCorrect = await applicant.isPasswordCorrect(oldPassword);
-    if (!isPasswordCorrect) throw new ApiError(400, 'Invalid old password');
-    
-    applicant.password = newPassword;
-    await applicant.save();
+  const applicant = await Applicant.findById(req.user._id);
+  const isPasswordCorrect = await applicant.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) throw new ApiError(400, 'Invalid old password');
 
-    return res.status(200).json(new ApiResponse(200, {}, 'Password changed successfully'));
+  applicant.password = newPassword;
+  await applicant.save();
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Password changed successfully'));
 });
 
 const updateApplicantAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
-  if (!avatarLocalPath) throw new ApiError(400, "Avatar file is missing");
+  if (!avatarLocalPath) throw new ApiError(400, 'Avatar file is missing');
 
   const applicant = await Applicant.findById(req.user._id);
   const oldAvatarUrl = applicant.avatar;
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  if (!avatar || !avatar.url) throw new ApiError(500, "Error while uploading avatar");
+  if (!avatar || !avatar.url) throw new ApiError(500, 'Error while uploading avatar');
 
   applicant.avatar = avatar.url;
   await applicant.save({ validateBeforeSave: false });
@@ -189,18 +194,20 @@ const updateApplicantAvatar = asyncHandler(async (req, res) => {
     if (publicIdValue) await deleteFromCloudinary(publicIdValue);
   }
 
-  return res.status(200).json(new ApiResponse(200, { avatar: avatar.url }, "Avatar updated successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { avatar: avatar.url }, 'Avatar updated successfully'));
 });
 
 const updateApplicantResume = asyncHandler(async (req, res) => {
   const resumeLocalPath = req.file?.path;
-  if (!resumeLocalPath) throw new ApiError(400, "Resume file is missing");
+  if (!resumeLocalPath) throw new ApiError(400, 'Resume file is missing');
 
   const applicant = await Applicant.findById(req.user._id);
   const oldResumeUrl = applicant.resume;
 
   const resume = await uploadOnCloudinary(resumeLocalPath);
-  if (!resume || !resume.url) throw new ApiError(500, "Error while uploading resume");
+  if (!resume || !resume.url) throw new ApiError(500, 'Error while uploading resume');
 
   applicant.resume = resume.url;
   await applicant.save({ validateBeforeSave: false });
@@ -210,28 +217,30 @@ const updateApplicantResume = asyncHandler(async (req, res) => {
     if (publicIdValue) await deleteFromCloudinary(publicIdValue);
   }
 
-  return res.status(200).json(new ApiResponse(200, { resume: resume.url }, "Resume updated successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { resume: resume.url }, 'Resume updated successfully'));
 });
 
 const deleteApplicantAccount = asyncHandler(async (req, res) => {
-    const applicant = await Applicant.findById(req.user._id);
+  const applicant = await Applicant.findById(req.user._id);
 
-    if (applicant.avatar) {
-        const publicIdValue = publicId(applicant.avatar);
-        if(publicIdValue) await deleteFromCloudinary(publicIdValue);
-    }
-    if (applicant.resume) {
-        const publicIdValue = publicId(applicant.resume);
-        if(publicIdValue) await deleteFromCloudinary(publicIdValue);
-    }
+  if (applicant.avatar) {
+    const publicIdValue = publicId(applicant.avatar);
+    if (publicIdValue) await deleteFromCloudinary(publicIdValue);
+  }
+  if (applicant.resume) {
+    const publicIdValue = publicId(applicant.resume);
+    if (publicIdValue) await deleteFromCloudinary(publicIdValue);
+  }
 
-    await Applicant.findByIdAndDelete(req.user._id);
+  await Applicant.findByIdAndDelete(req.user._id);
 
-    return res
-        .status(200)
-        .clearCookie('accessToken', cookieOptions)
-        .clearCookie('refreshToken', cookieOptions)
-        .json(new ApiResponse(200, {}, "Applicant account deleted successfully"));
+  return res
+    .status(200)
+    .clearCookie('accessToken', cookieOptions)
+    .clearCookie('refreshToken', cookieOptions)
+    .json(new ApiResponse(200, {}, 'Applicant account deleted successfully'));
 });
 
 export {
@@ -246,5 +255,3 @@ export {
   updateApplicantResume,
   deleteApplicantAccount,
 };
-
-
