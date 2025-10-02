@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { type } from 'os';
 
 const applicantSchema = mongoose.Schema(
   {
+    avatar :{
+      type:String,
+      required:true,
+    },
     fullName: {
       type: String,
       required: true,

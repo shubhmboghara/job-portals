@@ -1,22 +1,31 @@
 import { Router } from 'express';
 import {
-  createCompany,
-  getCompanies,
-  getCompanyById,
-  updateCompany,
-  deleteCompany,
+  registerCompany,
+  loginCompany,
+  logoutCompany,
+  refreshAccessToken,
+  getCompanyProfile,
+  updateCompanyProfile,
+  changePassword,
+  updateCompanyLogo,
+  deleteCompanyAccount,
 } from '../controllers/company.controller.js';
-import { protect, authorizeRoles } from '../middlewares/auth.middleware.js';
+import { protect, authorizeRoles } from '../middleware/auth.middleware.js';
+import { upload } from '../middleware/multer.middleware.js';
 
 const router = Router();
 
-router.route('/')
-  .post(protect, authorizeRoles('admin'), createCompany)
-  .get(getCompanies);
+router.route('/register').post(upload.single('logo'), registerCompany);
+router.route('/login').post(loginCompany);
+router.route('/refresh-token').post(refreshAccessToken);
 
-router.route('/:id')
-  .get(getCompanyById)
-  .put(protect, authorizeRoles('admin', 'company'), updateCompany)
-  .delete(protect, authorizeRoles('admin'), deleteCompany);
+router.use(protect, authorizeRoles('company'));
+
+router.route('/logout').post(logoutCompany);
+router.route('/profile').get(getCompanyProfile).put(updateCompanyProfile);
+router.route('/change-password').patch(changePassword);
+router.route('/delete-account').delete(deleteCompanyAccount);
+
+router.route('/profile/logo').patch(upload.single('logo'), updateCompanyLogo);
 
 export default router;
