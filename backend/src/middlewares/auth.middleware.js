@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
-import Applicant from '../models/applicant.model.js';
-import Company from '../models/company.model.js';
+import Applicant from '../models/applicants.model.js';
+import  company  from '../models/company.model.js';
 
 const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -19,7 +19,7 @@ const protect = asyncHandler(async (req, res, next) => {
       if (decoded.role === 'applicant') {
         req.user = await Applicant.findById(decoded._id).select('-password');
       } else if (decoded.role === 'company') {
-        req.user = await Company.findById(decoded._id).select('-password');
+        req.user = await company.findById(decoded._id).select('-password');
       }
 
       if (!req.user) {

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 const companySchema = new mongoose.Schema(
@@ -83,6 +83,6 @@ companySchema.methods.generateRefreshToken = function () {
   );
 };
 
-const Company = mongoose.model('Company', companySchema);
+const company = mongoose.model('Company', companySchema);
 
-export default Company;
+export default company;

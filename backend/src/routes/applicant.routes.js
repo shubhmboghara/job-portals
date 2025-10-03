@@ -15,14 +15,12 @@ import { upload } from '../middlewares/multer.middleware.js';
 
 const router = Router();
 
-
+// Public routes
 router.route('/register').post(upload.single('logo'), registerCompany);
-
 router.route('/login').post(loginCompany);
 router.route('/refresh-token').post(refreshAccessToken);
 
-
-
+// Protected Company routes
 router.use(protect, authorizeRoles('company'));
 
 router.route('/logout').post(logoutCompany);

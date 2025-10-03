@@ -2,10 +2,10 @@ import express from 'express';
 import cors from "cors"
 import cookieParser from 'cookie-parser';
 
-import applicantRoutes from './routes/applicant.routes.js';
+import applicantRoutes from './routes/Applicant.routes.js';
 import companyRoutes from './routes/company.routes.js';
 import jobRoutes from './routes/job.routes.js';
-import applicationRoutes from './routes/application.routes.js';
+// import applicationRoutes from './routes/application.routes.js';
 
 const app = express();
 
@@ -25,7 +25,7 @@ app.use(cookieParser());
 app.use('/api/applicants', applicantRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/jobs', jobRoutes);
-app.use('/api/applications', applicationRoutes);
+// app.use('/api/applications', applicationRoutes);
 
 
 export default app;
